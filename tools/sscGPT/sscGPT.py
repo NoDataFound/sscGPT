@@ -109,7 +109,7 @@ with col2:
     st.header("𝖲𝖾𝖼𝗎𝗋𝗂𝗍𝗒𝖲𝖼𝗈𝗋𝖾𝖼𝖺𝗋𝖽 𝖠𝗍𝗍𝖺𝖼𝗄 𝖲𝗎𝗋𝖿𝖺𝖼𝖾 𝖨𝗇𝗍𝖾𝗅𝗅𝗂𝗀𝖾𝗇𝖼𝖾 𝖠𝖯𝖨")
 
 st.sidebar.image(
-    "https://raw.githubusercontent.com/securityscorecard/ssc-asi-tools/master/tools/sscGPT/images/ssc_logo.png",width=475
+    "https://raw.githubusercontent.com/NoDataFound/sscGPT/master/tools/sscGPT/images/ssc_logo.png",width=475
 )
 
 
