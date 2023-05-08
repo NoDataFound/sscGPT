@@ -117,8 +117,7 @@ logo_col, query_col, button_col = st.sidebar.columns([4, 5, 2])
 
 
 with logo_col:
-    asi_enpoints = ["All Assets", "LeakedCreds", "
-                    ", "File Upload","ASI Query from URL"]
+    asi_enpoints = ["All Assets", "LeakedCreds", "Prebuilt", "File Upload","ASI Query from URL"]
     search_type = st.selectbox("", asi_enpoints,  label_visibility="hidden")
 
 
