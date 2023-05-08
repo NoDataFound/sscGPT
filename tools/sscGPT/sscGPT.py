@@ -117,7 +117,8 @@ logo_col, query_col, button_col = st.sidebar.columns([4, 5, 2])
 
 
 with logo_col:
-    asi_enpoints = ["All Assets", "LeakedCreds", "Prebuilt", "File Upload","ASI Query from URL"]
+    asi_enpoints = ["All Assets", "LeakedCreds", "
+                    ", "File Upload","ASI Query from URL"]
     search_type = st.selectbox("", asi_enpoints,  label_visibility="hidden")
 
 
@@ -239,7 +240,7 @@ SecurityScorecard Research blog: https://securityscorecard.com/blog?category=res
 
         with sscquery_col:
             st.info("Select a prebuilt query")
-        query_option = st.sidebar.selectbox("", prebuilt_queries)
+        query_option = st.sidebar.selectbox("", prebuilt_queries, label_visibility="hidden")
     if search_type == "ASI Query from URL":
         ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
 
