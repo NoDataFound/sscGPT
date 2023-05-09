@@ -291,7 +291,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
             generated_text = '\n'.join(generated_text_chunks)
             query = completions.choices[0].text.strip()
             assets = search_assets(query)
-            st.write(f"{generated_text}")
+            st.write(f"{generated_text_chunks[0]}")
 
                     #st.write(total_size)  
                     #st.write(generated_text)
