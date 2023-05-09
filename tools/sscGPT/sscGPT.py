@@ -1,299 +1,557 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+#p
 import requests
 import json
 import streamlit as st
 from dotenv import load_dotenv, set_key
 import pandas as pd
 import os
+import io
+import zipfile
 import csv
 import openai
-from jira import JIRA
-import openai
-from langchain.chains import ConversationChain
-from langchain.chains.conversation.memory import ConversationEntityMemory
-from langchain.chains.conversation.prompt import ENTITY_MEMORY_CONVERSATION_TEMPLATE
-from langchain.chat_models import ChatOpenAI
+from bs4 import BeautifulSoup
+from PIL import Image
+import pyscreenshot as ImageGrab
 
 
-load_dotenv('.env')
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+st.set_page_config(
+    page_title="𝖲𝖾𝖼𝗎𝗋𝗂𝗍𝗒𝖲𝖼𝗈𝗋𝖾𝖼𝖺𝗋𝖽 𝖠𝗍𝗍𝖺𝖼𝗄 𝖲𝗎𝗋𝖿𝖺𝖼𝖾 𝖨𝗇𝗍𝖾𝗅𝗅𝗂𝗀𝖾𝗇𝖼𝖾 𝖠𝖯𝖨",
+    page_icon="https://github.com/securityscorecard/ssc-asi-tools/raw/dev/res/images/SSC.Ti.ANSI.48x48.png",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
+load_dotenv(".env")
+
+api_key = os.environ.get("ASI_TOKEN")
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+if not api_key:
+    api_key = st.text_input("Enter ASI_TOKEN API key")
+    set_key(".env", "ASI_TOKEN", api_key)
 
 if not openai.api_key:
     openai.api_key = st.text_input("Enter OPENAI_API_KEY API key")
-    set_key('.env', 'OPENAI_API_KEY', openai.api_key)
+    set_key(".env", "OPENAI_API_KEY", openai.api_key)
 
-os.environ['OPENAI_API_KEY'] = openai.api_key
-st.set_page_config(page_title="𝚑𝚊𝚌𝚔🅶🅿🆃", page_icon="https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackgpt_fav.png", layout="wide")
-st.image('https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackGPT_logo.png', width=1000)
-st.markdown("---")
-logo_col, text_col = st.sidebar.columns([1, 3])
-logo_col.image('https://seeklogo.com/images/O/open-ai-logo-8B9BFEDC26-seeklogo.com.png', width=32)
-text_col.write('<div style="text-align: left;">OpenAI analysis of results</div>', unsafe_allow_html=True)
-def get_persona_files():
-    return [f.split(".")[0] for f in os.listdir("personas") if f.endswith(".md")]
-persona_files = get_persona_files()
-
-scenario = st.sidebar.selectbox("Scenarios", ["Default", "Jira Bug Hunter"])
-
-selected_persona = st.sidebar.selectbox("👤 Select Local Persona", ["hackGPTv1"] + persona_files)
-
-default_temperature = 0.0
-temperature = st.sidebar.slider(
-    "Temperature | Creative >0.5", min_value=0.0, max_value=1.0, step=0.1, value=default_temperature
-) 
-
-
-url = "https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv"
-data = pd.read_csv(url)
-new_row = pd.DataFrame({"act": [" "], "prompt": [""]})
-data = pd.concat([data, new_row], ignore_index=True)
-
-
-persona_files = [f.split(".")[0] for f in os.listdir("personas") if f.endswith(".md")]
-st.sidebar.markdown("---")
-
-expand_section = st.sidebar.expander("👤 Manage Personas", expanded=False)
-with expand_section:
-    #st.subheader("👤 Manage Personas")
-    if selected_persona:
-        with open(os.path.join("personas", f"{selected_persona}.md"), "r") as f:
-            persona_text = f.read()
-        new_persona_name = st.text_input("Persona Name:", value=selected_persona)
-        new_persona_prompt = st.text_area("Persona Prompt:", value=persona_text, height=100)
-        if new_persona_name != selected_persona or new_persona_prompt != persona_text:
-            with open(os.path.join("personas", f"{new_persona_name}.md"), "w") as f:
-                f.write(new_persona_prompt)
-            if new_persona_name != selected_persona:
-                os.remove(os.path.join("personas", f"{selected_persona}.md"))
-                persona_files.remove(selected_persona)
-                persona_files.append(new_persona_name)
-                selected_persona = new_persona_name
-        if st.button("➖ Delete Persona"):
-            if st.warning("Persona Deleted"):
-                os.remove(os.path.join("personas", f"{selected_persona}.md"))
-                persona_files.remove(selected_persona)
-                selected_persona = ""
-expand_section = st.sidebar.expander("🥷 Import Remote Persona", expanded=False)
-with expand_section:
-    selected_act = st.selectbox('', data['act'])
-    show_remote_prompts = st.checkbox("Show remote prompt options")
-    if selected_act and selected_act.strip():
-        selected_prompt = data.loc[data['act'] == selected_act, 'prompt'].values[0]
-        confirm = st.button("Save Selected Persona")
-        if confirm:
-            if not os.path.exists("personas"):
-                os.mkdir("personas")
-            with open(os.path.join("personas", f"{selected_act}_remote.md"), "w") as f:
-                f.write(selected_prompt)
-expand_section = st.sidebar.expander("➕ Add new Persona", expanded=False)
-if show_remote_prompts:
-    st.write(data[['act', 'prompt']].style.hide(axis="index").set_properties(subset='prompt', **{
-        'max-width': '100%',
-        'white-space': 'pre-wrap'
-    }))
-with expand_section:
-    st.subheader("➕ Add new Persona")
-    st.text("Press enter to update/save")
-    persona_files = get_persona_files()
-    new_persona_name = st.text_input("Persona Name:")
-    if new_persona_name in persona_files:
-        st.error("This persona name already exists. Please choose a different name.")
-    else:
-        new_persona_prompt = st.text_area("Persona Prompt:", height=100)
-        if new_persona_name and new_persona_prompt:
-            with open(os.path.join("personas", f"{new_persona_name}.md"), "w") as f:
-                f.write(new_persona_prompt)
-            persona_files.append(new_persona_name)
-            selected_persona = new_persona_name
-if selected_persona:
-    with open(os.path.join("personas", f"{selected_persona}.md"), "r") as f:
-        persona_text = f.read()
-        #st.text("Press Enter to add")
-
-
-
-
-st.sidebar.markdown("---")
-
-st.sidebar.markdown("""
-    <center>
-
-    <img src='https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackgpt_fav.png' alt='hackGPTlogo' width='20'/> 
-    
-
-    <img src='https://seeklogo.com/images/O/open-ai-logo-8B9BFEDC26-seeklogo.com.png' alt='OpenAI logo' width='20'/> 
-    hackGPT Chatbot
-
-    </center>
-""", unsafe_allow_html=True)
-
-
-if "generated" not in st.session_state:
-    st.session_state["generated"] = []
-if "past" not in st.session_state:
-    st.session_state["past"] = []
-if "input" not in st.session_state:
-    st.session_state["input"] = ""
-if "stored_session" not in st.session_state:
-    st.session_state["stored_session"] = []
-
-def get_text():
-
-    input_text = st.text_input("User: ", st.session_state["input"], key="input",
-                            placeholder="Welcome to hack🅶🅿🆃...", 
-                            label_visibility="hidden")
-    return input_text
-
-def new_chat():
-    save = []
-    for i in range(len(st.session_state['generated'])-1, -1, -1):
-        save.append("User:" + st.session_state["past"][i])
-        save.append("hackGPT:" + st.session_state["generated"][i])        
-    st.session_state["stored_session"].append(save)
-    st.session_state["generated"] = []
-    st.session_state["past"] = []
-    st.session_state["input"] = "Who are you?"
-    st.session_state.entity_memory.entity_store = {}
-    st.session_state.entity_memory.buffer.clear()
-
-with st.sidebar.expander("⚙️ Settings", expanded=False):
-    if st.checkbox("Preview memory store"):
-        with st.expander("Memory-Store", expanded=False):
-            st.session_state.entity_memory.store
-    if st.checkbox("Preview memory buffer"):
-        with st.expander("Buffer-Store", expanded=False):#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import requests
-import json
-import streamlit as st
-from dotenv import load_dotenv, set_key
-import pandas as pd
-import os
-import csv
-import openai
-import time
-import altair as alt
-
-
-load_dotenv('.env')
-openai.api_key = os.environ.get('OPENAI_API_KEY')
-
-if not openai.api_key:
-    openai.api_key = st.text_input("Enter OPENAI_API_KEY API key")
-    set_key('.env', 'OPENAI_API_KEY', openai.api_key)
-
-os.environ['OPENAI_API_KEY'] = openai.api_key
-st.set_page_config(page_title="𝚑𝚊𝚌𝚔🅶🅿🆃", page_icon="https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackgpt_fav.png", layout="wide")
-# Define the chat history data as a Pandas DataFrame
-
-CSS = """
-img {
-    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.2);
-}
-"""
-
-st.markdown(f'<style>{CSS}</style>', unsafe_allow_html=True)
-st.sidebar.image('https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/hackGPT_logo.png', width=300)
-github_logo = "https://raw.githubusercontent.com/NoDataFound/hackGPT/main/res/github.png"
-hackGPT_repo = "https://github.com/NoDataFound/hackGPT"
-
-st.sidebar.markdown(f"[![GitHub]({github_logo})]({hackGPT_repo} 'hackGPT repo')")
-#Persona Setup
-def get_persona_files():
-    return [f.split(".")[0] for f in os.listdir("personas") if f.endswith(".md")]
-persona_files = get_persona_files()
-selected_persona = st.sidebar.selectbox("👤 𝖲𝖾𝗅𝖾𝖼𝗍 𝖫𝗈𝖼𝖺𝗅 𝖯𝖾𝗋𝗌𝗈𝗇𝖺", ["None"] + persona_files)
-persona_files = [f.split(".")[0] for f in os.listdir("personas") if f.endswith(".md")]
-
-
-# OpenAI setup
-MODEL = st.sidebar.selectbox(label='Model', options=['gpt-3.5-turbo','gpt-3.5-turbo-0301','gpt-4','gpt-4-0314','text-davinci-003','text-davinci-002','text-davinci-edit-001','code-davinci-edit-001'])
+os.environ["OPENAI_API_KEY"] = openai.api_key
+os.environ["ASI_TOKEN"] = api_key
 
 default_temperature = 1.0
-temperature = st.sidebar.slider(
-    "𝗧𝗲𝗺𝗽𝗲𝗿𝗮𝘁𝘂𝗿𝗲 | 𝗖𝗿𝗲𝗮𝘁𝗶𝘃𝗲 <𝟬.𝟱", min_value=0.0, max_value=1.0, step=0.1, value=default_temperature
-) 
-max_tokens = st.sidebar.slider("𝗠𝗔𝗫 𝗢𝗨𝗧𝗣𝗨𝗧 𝗧𝗢𝗞𝗘𝗡𝗦", 10, 200, 2300)
+temperature = default_temperature
+personas = "ssc_personas"
+query_persona = "ASIQuery"
+default_persona = "ThreatHunter"
+with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
+    persona_text = f.read()
 
-#Prompt Setups
-url = "https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv"
-jailbreaks = "https://raw.githubusercontent.com/NoDataFound/hackGPT/main/jailbreaks.csv"
-data = pd.read_csv(url)
-new_row = pd.DataFrame({"act": [" "], "prompt": [""]})
-data = pd.concat([data, new_row], ignore_index=True)
+search_url = "https://api.securityscorecard.io/asi/search"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Token " + str(api_key),
+}
+
+
+def search_assets(query):
+    data = {"query": query, "cursor": "initial", "size": 1000}
+    response = requests.post(search_url, json=data, headers=headers).json()
+    return response
+
+
+def get_ip_info(ip_address):
+    data = {
+        "query": query,
+        "sortDir": "asc",
+        "page": 5,
+        "index": "ipv4",
+        "parser": "structured",
+        "size": 1000,
+    }
+    response = requests.post(search_url, json=data, headers=headers).json()
+    return response
+
+
+def search_leaked_credentials(query):
+    data = {"query": query, "index": "leakedcreds", "parser": "structured"}
+    response = requests.post(search_url, json=data, headers=headers).json()
+    return response
+
+
+def parse_html_to_text(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+    return " ".join(soup.stripped_strings)
+
+
+prebuilt_queries = [
+    "(and port:22 threat_actor:'Lazarus Group' industry:'GOVERNMENT')",
+    "(and has_ransomware:1 industry:'FINANCIAL_SERVICES' country:'DE')",
+    "(and has_infection:1 (and (or service:'dnp3' service:'modbus'))) ",
+    "(and crawling_detected_library_name: 'WordPress' (and (or hostname:'dev' hostname:'test' hostname:'qa' hostname:'staging'))) ",
+    "(and org:'SecurityScorecard' cloud_provider:'aws' cloud_region:'us-east-1')",
+    "(and has_cve:1 has_scorecard:0 os_type:'Windows')",
+    "(and os_type:'FortiOS' (not (or cloud_provider:'aws' cloud_provider:'oracle' cloud_provider:'gce' cloud_provider:'azure')))",
+    "(and country:'US' ssl_subject_country:'CN' device_type:'webcam')",
+    "(and has_malrep:1 ransomware_group:'CONTI')",
+    "(and has_infection:1 has_threatactor:1 has_cve:1 has_ransomware:1 has_malrep:1)",
+]
+
+col1, col2 = st.columns([1, 4])
+with col1:
+    st.image(
+        "https://securityscorecard.com/wp-content/uploads/2023/02/android-chrome-512x512-1.png",
+        width=100,
+    )
+with col2:
+    st.header("𝖲𝖾𝖼𝗎𝗋𝗂𝗍𝗒𝖲𝖼𝗈𝗋𝖾𝖼𝖺𝗋𝖽 𝖠𝗍𝗍𝖺𝖼𝗄 𝖲𝗎𝗋𝖿𝖺𝖼𝖾 𝖨𝗇𝗍𝖾𝗅𝗅𝗂𝗀𝖾𝗇𝖼𝖾 𝖠𝖯𝖨")
+
+st.sidebar.image(
+    "https://raw.githubusercontent.com/NoDataFound/sscGPT/master/tools/sscGPT/images/ssc_logo.png"
+)
+
+
+logo_col, query_col, button_col = st.sidebar.columns([4, 5, 2])
+
+
+with logo_col:
+    asi_enpoints = ["All Assets", "LeakedCreds", "Prebuilt", "File Upload","ASI Query from URL"]
+    search_type = st.selectbox("", asi_enpoints,  label_visibility="hidden")
+
+
+with query_col:
+    query = st.text_input("", placeholder="Enter search query", label_visibility="hidden")
+    st.markdown(
+        """
+        <style>
+
+        input[type="text"] {
+            width: 100%;
+            padding: 7px 5px;
+            margin: 0.5px ;
+            box-sizing: border-box;
+            border: .5px solid #673ff2;
+            border-radius: 2px;
+
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.write("")
+
+st.write(
+    "<p style='text-align: justify; font-size: small; color: gray; font-style: italic;'>\
+<strong>Disclaimer:</strong> The information provided with this application is 'as-is' and you acknowledge and agree that SecurityScorecard, Inc. makes no representation or warranty, express or implied, as to the accuracy or completeness of the information. You agree that SecurityScorecard shall not have any liability resulting from your use of this information or reliance on the same.\
+</p>",
+    unsafe_allow_html=True,
+)
+textdir = "output/Text/" + query.replace(" ", "_").rstrip("\r\n") + ".txt"
+jsondir = "output/JSON/" + query.replace(" ", "_").rstrip("\r\n") + ".json"
+csvdir = "output/CSV/" + query.replace(" ", "_").rstrip("\r\n") + ".csv"
+
+if query != "":
+    show_csv = st.sidebar.checkbox("Show CSV")
+    st.markdown(
+        """
+        <style>
+        input[type="text"] {
+            width: 100%;
+            padding: 8px 5px;
+            margin: 1px ;
+            box-sizing: border-box;
+            border: .5px solid #673ff2;
+            border-radius: 2px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    try:
+        df = pd.read_csv(csvdir)
+    except FileNotFoundError:
+        st.warning("No CSV file found for the given query.")
+        df = pd.DataFrame()
+
+    if not df.empty and show_csv:
+        search_field = st.text_input("Enter field name to search in CSV results")
+        row_display_count = st.slider(
+            "Number of rows to display", 1, len(df), len(df), 1
+        )
+        st.write(
+            '<style>div[data-baseweb="table"] table { width: 100% !important; }</style>',
+            unsafe_allow_html=True,
+        )
+        table = st.dataframe(df.head(row_display_count), height=600)
+
+        filtered_data = df.to_csv(index=False).encode("utf-8")
+        container = st.empty()
+
+        if search_field:
+            search_field = search_field.lower()
+            df = df.apply(lambda x: x.astype(str).str.lower())
+            df = df[df.apply(lambda row: search_field in row.values, axis=1)]
+            df = df.apply(lambda x: x.astype(str).str.title())
+
+        if container.button("Download Filtered Data", key="download_button"):
+            df_flat = pd.DataFrame(df.stack(), columns=["value"]).reset_index()
+            filtered_data = df_flat.to_csv(index=False).encode("utf-8")
+
+            st.download_button(
+                label="Download Filtered Data",
+                data=filtered_data,
+                file_name="filtered_data.csv",
+                mime="text/csv",
+            )
+    elif not df.empty and not show_csv:
+        st.info("CSV table is hidden. Check the 'Show CSV' checkbox to display it.")
+    else:
+        st.warning("No data to display.")
+
+with st.expander("Quick Start", expanded=False):
+    st.markdown(
+        """
+    `TLDR (Quickstart)`
+
+    1. Enter Search Query or select from list of pre built examples and press search.
+
+    2. View or Download JSON or CSV Results
+        - Check `Show CSV` to display data in page
+
+    3. Select Analysis Persona, set Temperature and press "Generate SSCGPT Results"
+        - Search results will be sent to OpenAI and a report will be generated based on persona type"""
+    )
+    st.write(
+        """
+Attack Surface Intelligence API Query guide: https://support.securityscorecard.com/hc/en-us/articles/7659237759515-Create-your-own-ASI-queries#h_01GAJMX665W3S871DBJ1C6QCK7
+
+SecurityScorecard Research blog: https://securityscorecard.com/blog?category=research"""
+    )
+    st.markdown("---")
+with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
+    persona_text = f.read()
+    if search_type == "Prebuilt":
+        ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
+
+        with ssclogo_col:
+            st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+
+        with sscquery_col:
+            st.info("Select a prebuilt query")
+        query_option = st.sidebar.selectbox("", prebuilt_queries, label_visibility="hidden")
+    if search_type == "ASI Query from URL":
+        ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
+
+        with ssclogo_col:
+            st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+
+        with sscquery_col:
+            st.info("Generate Attack Surface Intelligence Query from URL")
+        url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
+        with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
+            persona_asi = personas+"ASIQuery.txt".read()
+        if url:
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+
+                img = ImageGrab.grab(bbox=(0, 0, 470, 380))
+                st.image(img, use_column_width=False)
+
+                container = st.container()
+
+                container.markdown(
+                    f'<p style="text-align: center; font-weight: bold;">Screenshot of {url}</p>',
+                    unsafe_allow_html=True,
+                )
+                parsed_text = parse_html_to_text(response.text)
+                prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
+                prompt = prompt_template.format(parsed_text, persona_asi)
+                completions = openai.Completion.create(
+                    engine="text-davinci-003",
+                    prompt=prompt,
+                    max_tokens=2024,
+                    n=1,
+                    stop=None,
+                    temperature=1.0,
+                )
+                query = completions.choices[0].text.strip()
+                assets = search_assets(query)
+                st.markdown("----")
+                st.write(f"{query}")
+            except requests.exceptions.RequestException as e:
+                st.error(f"Error occurred while fetching the URL: {e}")
+
+results = search_assets(query)
+if search_type == "All Assets":
+
+    sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
+
+    with sscassetlogo_col:
+        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+
+    with sscassetquery_col:
+        st.info("Search All ASI facets")
+elif search_type == "LeakedCreds":
+
+    sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
+
+    with sscassetlogo_col:
+        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+
+    with sscassetquery_col:
+        st.warning("Search ASI for LeakedCreds")
+elif search_type == "File Upload":
+
+    file = st.sidebar.file_uploader("Choose a file")
+    if file is not None:
+        content = file.readlines()
+        #content_lines = content.split("\n")
+
+    sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
+
+    with sscassetlogo_col:
+        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+
+    with sscassetquery_col:
+        st.warning("Read File contents and search ASI for each line")
+with button_col:
+    st.write("")
+    st.write("")
+    push = st.button("𝖲𝖾𝖺𝗋𝖼𝗁")
+if push == 1:
+    if search_type == "All Assets":
+        st.json(results)
+        with open(jsondir, "w", encoding="UTF-8") as jsonout:
+            json.dump(results, jsonout)
+        df = pd.DataFrame(results["hits"])
+        df.to_csv(csvdir, index=False)
+        with open(textdir, "w", encoding="UTF-8") as textout:
+            for hit in results["hits"]:
+                for key, value in hit.items():
+                    textout.write(f"{key}: {value}\n")
+                    textout.write("\n")
+        with open(jsondir, "r", encoding="UTF-8") as file:
+            json_content = file.read()
+
+        json_button = st.download_button(
+            label="Download JSON",
+            data=json_content,
+            file_name=f"{query.replace(' ', '_')}.json",
+            mime="application/json",
+        )
+        with open(csvdir, "r", encoding="UTF-8") as file:
+            csv_content = file.read()
+
+        csv_button = st.download_button(
+            label="Download CSV",
+            data=csv_content,
+            file_name=f"{query.replace(' ', '_')}.csv",
+            mime="text/csv",
+        )
+    elif search_type == "LeakedCreds":
+        results = search_assets(query)
+        st.json(results)
+        with open(jsondir, "w", encoding="UTF-8") as jsonout:
+            json.dump(results, jsonout)
+        df = pd.DataFrame(results["hits"])
+        df.to_csv(csvdir, index=False)
+        with open(textdir, "w", encoding="UTF-8") as textout:
+            for hit in results["hits"]:
+                for key, value in hit.items():
+                    textout.write(f"{key}: {value}\n")
+                    textout.write("\n")
+        with open(jsondir, "r", encoding="UTF-8") as file:
+
+            json_content = file.read()
+        json_button = st.download_button(
+            label="Download JSON",
+            data=json_content,
+            file_name=f"{query.replace(' ', '_')}.json",
+            mime="application/json",
+        )
+
+        with open(csvdir, "r", encoding="UTF-8") as file:
+            csv_content = file.read()
+        csv_button = st.download_button(
+            label="Download CSV",
+            data=csv_content,
+            file_name=f"{query.replace(' ', '_')}.csv",
+            mime="text/csv",
+        )
+
+    elif search_type == "Prebuilt":
+        results = search_assets(query_option)
+        st.json(results)
+        with open(jsondir, "w", encoding="UTF-8") as jsonout:
+            json.dump(results, jsonout)
+        df = pd.DataFrame(results["hits"])
+        df.to_csv(csvdir, index=False)
+        with open(textdir, "w", encoding="UTF-8") as textout:
+            for hit in results["hits"]:
+                for key, value in hit.items():
+                    textout.write(f"{key}: {value}\n")
+                    textout.write("\n")
+
+        with open(jsondir, "r", encoding="UTF-8") as file:
+            json_content = file.read()
+        json_button = st.download_button(
+            label="Download JSON",
+            data=json_content,
+            file_name=f"{query.replace(' ', '_')}.json",
+            mime="application/json",
+        )
+
+        with open(csvdir, "r", encoding="UTF-8") as file:
+            csv_content = file.read()
+        csv_button = st.download_button(
+            label="Download CSV",
+            data=csv_content,
+            file_name=f"{query.replace(' ', '_')}.csv",
+            mime="text/csv",
+        )
+    elif search_type == "File Upload":
+        results = search_assets(query)
+        for line in content:
+            line = line.strip()
+            for chunk in line:
+
+                with open(textdir, "r") as textfile:
+                    st.json(results)
+                with open(jsondir, "w", encoding="UTF-8") as jsonout:
+                    json.dump(results, jsonout)
+                df = pd.DataFrame(results["hits"])
+                df.to_csv(csvdir, index=False)
+                with open(textdir, "w", encoding="UTF-8") as textout:
+                    for hit in results["hits"]:
+                        for key, value in hit.items():
+                            textout.write(f"{key}: {value}\n")
+                            textout.write("\n")
+                with open(jsondir, "r", encoding="UTF-8") as file:
+                    json_content = file.read()
+
+                json_button = st.download_button(
+                    label="Download JSON",
+                    data=json_content,
+                    file_name=f"{query.replace(' ', '_')}.json",
+                    mime="application/json",
+                )
+                with open(csvdir, "r", encoding="UTF-8") as file:
+                    csv_content = file.read()
+
+                csv_button = st.download_button(
+                    label="Download CSV",
+                    data=csv_content,
+                    file_name=f"{query.replace(' ', '_')}.csv",
+                    mime="text/csv",
+                )
+
+persona_files = [f.split(".")[0] for f in os.listdir(personas) if f.endswith(".txt")]
+
+
+st.sidebar.markdown("----")
+
+
+def get_persona_files():
+    return [f.split(".")[0] for f in os.listdir(personas) if f.endswith(".txt")]
+
+
+persona_files = get_persona_files()
+
+
+ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
+
+with ssclogo_col:
+    st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+with sscquery_col:
+    st.error("👤 Select Persona")
+
+selected_persona = st.sidebar.selectbox("", [default_persona] + persona_files)
+
+
+st.sidebar.markdown("----")
+ologo_col, oquery_col = st.sidebar.columns([1, 10])
+
+with ologo_col:
+    st.image("https://simpleicons.org/icons/openai.svg", width=50)
+
+with oquery_col:
+    st.info("sscGPT analysis")
+    sscpgt_button = st.sidebar.button("Generate sscGPT analysis")
+
+if sscpgt_button == 1:
+    with open(os.path.join(personas, f"{selected_persona}.txt"), "r") as f:
+        persona_text = f.read()
+    with open(textdir, "r") as textfile:
+        for line in textfile:
+            line = line.strip()
+            if ":" in line:
+                text_text = line.split(":", 1)[1].strip()
+                if text_text != "" and text_text != [""]:
+                    data = textfile.read()
+                    input_chunks = [
+                        data[i : i + 2500] for i in range(0, len(data), 2500)
+                    ]
+                generated_text_chunks = []
+                for chunk in input_chunks:
+                    response = openai.Completion.create(
+                        engine="text-davinci-003",
+                        prompt=f"data = {chunk} {persona_text} do not print {chunk} directly. ",
+                        max_tokens=1024,
+                        n=1,
+                        stop=None,
+                        temperature=temperature,
+                    )
+                    generated_text_chunks.append(response.choices[0].text.strip())
+                    generated_text = "\n".join(generated_text_chunks)
+                    break
+
+    st.subheader(
+        "𝖲𝖾𝖼𝗎𝗋𝗂𝗍𝗒𝖲𝖼𝗈𝗋𝖾𝖼𝖺𝗋𝖽 𝖠𝗍𝗍𝖺𝖼𝗄 𝖲𝗎𝗋𝖿𝖺𝖼𝖾 𝖨𝗇𝗍𝖾𝗅𝗅𝗂𝗀𝖾𝗇𝖼𝖾 chatGPT Analysis Results"
+    )
+    st.write(generated_text)
+
+st.sidebar.markdown("----")
+ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
+
+with ssclogo_col:
+    st.image("https://simpleicons.org/icons/securityscorecard.svg", width=24)
+with sscquery_col:
+    st.caption("Manage Personas")
 expand_section = st.sidebar.expander("👤 Manage Personas", expanded=False)
-
-jailbreakdata = pd.read_csv(jailbreaks)
-jailbreaknew_row = pd.DataFrame({"hacker": [" "], "text": [""]})
-jailbreakdata = pd.concat([jailbreakdata, jailbreaknew_row], ignore_index=True)
-
 
 
 with expand_section:
-    #st.subheader("👤 Manage Personas")
     if selected_persona:
-        with open(os.path.join("personas", f"{selected_persona}.md"), "r") as f:
+        with open(os.path.join(personas, f"{selected_persona}.txt"), "r") as f:
             persona_text = f.read()
         new_persona_name = st.text_input("Persona Name:", value=selected_persona)
-        new_persona_prompt = st.text_area("Persona Prompt:", value=persona_text, height=100)
+        new_persona_prompt = st.text_area(
+            "Persona Prompt:", value=persona_text, height=100
+        )
+
         if new_persona_name != selected_persona or new_persona_prompt != persona_text:
-            with open(os.path.join("personas", f"{new_persona_name}.md"), "w") as f:
+            with open(os.path.join(personas, f"{new_persona_name}.txt"), "w") as f:
                 f.write(new_persona_prompt)
+
             if new_persona_name != selected_persona:
-                os.remove(os.path.join("personas", f"{selected_persona}.md"))
+                os.remove(os.path.join(personas, f"{selected_persona}.txt"))
                 persona_files.remove(selected_persona)
                 persona_files.append(new_persona_name)
                 selected_persona = new_persona_name
+
         if st.button("➖ Delete Persona"):
             if st.warning("Persona Deleted"):
-                os.remove(os.path.join("personas", f"{selected_persona}.md"))
+                os.remove(os.path.join(personas, f"{selected_persona}.txt"))
                 persona_files.remove(selected_persona)
                 selected_persona = ""
-expand_section = st.sidebar.expander("🥷 Import Remote Persona", expanded=False)
-
-with expand_section:
-    selected_act = st.selectbox('', data['act'])
-    show_remote_prompts = st.checkbox("Show remote prompt options")
-    if selected_act and selected_act.strip():
-        selected_prompt = data.loc[data['act'] == selected_act, 'prompt'].values[0]
-        confirm = st.button("Save Selected Persona")
-        if confirm:
-            if not os.path.exists("personas"):
-                os.mkdir("personas")
-            with open(os.path.join("personas", f"{selected_act}_remote.md"), "w") as f:
-                f.write(selected_prompt)
-
-expand_section = st.sidebar.expander("🏴‍☠️ Jailbreaks", expanded=False)
-
-with expand_section:
-    selected_hacker = st.selectbox('', jailbreakdata['hacker'])
-    show_hack_prompts = st.checkbox("Show jailbreak options")
-    if selected_hacker and selected_hacker.strip():
-        selected_jailbreak_prompt = jailbreakdata.loc[jailbreakdata['hacker'] == selected_hacker, 'text'].values[0]
-        confirm = st.button("Save Selected Jailbreak")
-        if confirm:
-            if not os.path.exists("personas"):
-                os.mkdir("personas")
-            with open(os.path.join("personas", f"{selected_hacker}_jailbreak.md"), "w") as f:
-                f.write(selected_jailbreak_prompt)
-
 expand_section = st.sidebar.expander("➕ Add new Persona", expanded=False)
-if show_hack_prompts:
-    st.write(jailbreakdata[['hacker', 'text']].style.hide(axis="index").set_properties(subset='text', **{
-        'max-width': '100%',
-        'white-space': 'pre-wrap'
-    }))
-elif show_remote_prompts:
-    st.write(data[['act', 'prompt']].style.hide(axis="index").set_properties(subset='prompt', **{
-        'max-width': '100%',
-        'white-space': 'pre-wrap'
-    }))
 with expand_section:
     st.subheader("➕ Add new Persona")
     st.text("Press enter to update/save")
+
     persona_files = get_persona_files()
     new_persona_name = st.text_input("Persona Name:")
     if new_persona_name in persona_files:
@@ -301,245 +559,16 @@ with expand_section:
     else:
         new_persona_prompt = st.text_area("Persona Prompt:", height=100)
         if new_persona_name and new_persona_prompt:
-            with open(os.path.join("personas", f"{new_persona_name}.md"), "w") as f:
+            with open(os.path.join(personas, f"{new_persona_name}.txt"), "w") as f:
                 f.write(new_persona_prompt)
             persona_files.append(new_persona_name)
             selected_persona = new_persona_name
-if selected_persona:
-    with open(os.path.join("personas", f"{selected_persona}.md"), "r") as f:
-        persona_text = f.read()
-        #st.text("Press Enter to add")
+    if selected_persona:
+        with open(os.path.join(personas, f"{selected_persona}.txt"), "r") as f:
+            persona_text = f.read()
+    st.text("Press Enter to add")
 
-#options = st.multiselect(
-#    '**Persona Tags:**',
-#    options=persona_files,
-#    default=persona_files,
-#    key='persona_files'
-#)
-
-# Define the function to get the AI's response
-def get_ai_response(text_input):
-    messages = [{'role': 'system', 'content': 'You are a helpful assistant.'},
-                {'role': 'user', 'content': text_input+persona_text}]
-
-    response = openai.ChatCompletion.create(
-        model=MODEL,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0.6,
-        stop=[" Human:", " AI:"]
-    )
-    return response['choices'][0]['message']['content']
-
-def add_text(text_input):
-    response = openai.Completion.create(
-        model=MODEL,
-        prompt=str(persona_text) + text_input,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0,
-        stop=["\"\"\""]
-        )
-    return response['choices'][0]['text']
-
-try:
-    if st.session_state.chat_history == 0 :
-        col1, col2, col3 ,col4, col5 = st.columns(5)
-        col1.metric("Persona", selected_persona,selected_persona ) 
-        col2.metric("Persona Count", len(persona_files),len(persona_files) ) 
-        col3.metric("Jailbreaks", len(jailbreakdata), len(jailbreakdata))
-        col4.metric("Model", MODEL)
-        col5.metric("Model Count", len(MODEL), len(MODEL))
-        
-    elif st.session_state.chat_history != 0 :
-        col1, col2, col3 ,col4, col5, col6 = st.columns(6)
-        col1.metric("Persona", selected_persona,selected_persona ) 
-        col2.metric("Persona Count", len(persona_files),len(persona_files) )
-        col3.metric("Jailbreaks", len(jailbreakdata), len(jailbreakdata))
-        col4.metric("Model", MODEL)
-        col5.metric("Model Count", len(MODEL), len(MODEL))
-        col6.metric("Messages", len(st.session_state.chat_history), len(st.session_state.chat_history))
-except:
-    pass
-   
-
-#st.sidebar.header("File Upload")
-file = st.sidebar.file_uploader("", type=["txt"])
-
-#if file is not None:
-#    line_by_line = st.sidebar.checkbox("Process line by line")
-#    max_length = 2000
-#    text = file.read().decode("utf-8")
-#    if line_by_line:
-#        for line in text.split("\n"):
-#            st.write(f"Input: {line}")
-#            response = get_ai_response(line)
-#            st.write(f"Output: {response}")
-#    else:
-#        chunks = chunk_text(text, max_length)
-#        for chunk in chunks:
-#            st.write(f"Input: {chunk}")
-#            response = add_text(chunk)
-#            st.write(f"Output: {response}")   
-
-user_css = """
-    <style>
-        .user {
-        display: inline-block;
-        padding: 8px;
-        border-radius: 10px;
-        margin-bottom: 1px;
-        border: 1px solid #e90ce4;
-        width: 100%;
-        height: 100%; /* Set the height to a fixed value */
-        overflow-y: scroll; /* Add a scrollbar if necessary */
-        }
-        
-    </style>
-"""
-
-ai_css = """
-    <style>
-        .ai {
-        display: inline-block;
-        padding: 10px;
-        border-radius: 10px;
-        margin-bottom: 1px;
-        border: 1px solid #0ab5e0;
-        width: 100%;
-        overflow-x: scroll; /* Set the x to a fixed value */
-        height: 100%; /* Set the height to a fixed value */
-        overflow-y: scroll; /* Add a scrollbar if necessary */
-        }
-    </style>
-"""
-model_css = """
-    <style>
-        .model {
-            display: inline-block;
-            background-color: #f0e0ff;
-            padding: 1px;
-            border-radius: 5px;
-            margin-bottom: 5px;
-            width: 100%; 
-            height: 100%; /* Set the height to a fixed value */
-            overflow-y: scroll; /* Add a scrollbar if necessary */
-        }
-    </style>
-"""
-
-st.markdown(user_css, unsafe_allow_html=True)
-st.markdown(ai_css, unsafe_allow_html=True)
-
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-def display_chat_history():
-    for i, (role, text) in reversed(list(enumerate(st.session_state.chat_history))):
-        alignment = 'left' if role == 'user' else 'left'
-
-        if role == 'user':
-            margin = 'margin-bottom: 1px;'
-        else:
-            margin = 'margin-top: 8px;'
-
-        col1, col2 = st.columns([2, 8])
-        with col1:
-            if role == 'user':
-                st.markdown(f'<div style="{margin}" class="{role}">{text}</div>', unsafe_allow_html=True)
-            if role == 'model':
-                st.markdown(f'<div style="text-align: left; color: green;" class="{role}">{text}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('')
-        with col2:
-            if role == 'ai':
-                st.markdown(f'<div style="text-align: {alignment}; {margin}" class="{role}">{text}</div>', unsafe_allow_html=True)
-            if role == 'persona':
-                st.markdown(f'<div style="text-align: right; color: orange;" class="{role}">{text}</div>', unsafe_allow_html=True)
-st.write("")  
-text_input = st.text_input("", value="", key="text_input", placeholder="Type your message here...", help="Press Enter to send your message.")
-if MODEL == 'gpt-3.5-turbo' or MODEL == 'gpt-4' or MODEL == 'gpt-3.5-turbo-0301' or MODEL == 'gpt-4-0314':
-    if text_input:
-        ai_response = get_ai_response(text_input)
-        st.session_state.chat_history.append(('ai', f"{ai_response}"))
-        st.session_state.chat_history.append(('persona', f"{selected_persona}"))
-        st.session_state.chat_history.append(('user', f"You: {text_input}"))
-        st.session_state.chat_history.append(('model', f"{MODEL}"))
-
-
-elif MODEL != 'gpt-3.5-turbo' or MODEL != 'gpt-4' or MODEL != 'gpt-3.5-turbo-0301' or MODEL != 'gpt-4-0314':
-    if text_input:
-        ai_responses = add_text(text_input)
-        st.session_state.chat_history.append(('ai', f"{ai_responses}"))
-        #st.session_state.chat_history.append(('ai', f"{line}"))
-        st.session_state.chat_history.append(('persona', f"{selected_persona}"))
-        st.session_state.chat_history.append(('user', f"You: {text_input}"))
-        st.session_state.chat_history.append(('model', f"{MODEL}"))
-
-
-display_chat_history()
-
-
-
-if st.button("Download Chat History"):
-    chat_history_text = "\n".join([text for _, text in st.session_state.chat_history])
-    st.download_button(
-        label="Download Chat History",
-        data=chat_history_text.encode(),
-        file_name="chat_history.txt",
-        mime="text/plain",
-            st.session_state.entity_memory.buffer
-    MODEL = st.selectbox(label='Model', options=['gpt-3.5-turbo','text-davinci-003','text-davinci-002','code-davinci-002'])
-    K = st.number_input(' (#) Summary of prompts to consider', min_value=3, max_value=100)
-
-if openai.api_key:
-    with open(os.path.join("personas", f"{selected_persona}.md"), "r") as f:
-        persona_text = f.read()
-    persona_text = persona_text
-    llm = ChatOpenAI(temperature=temperature,
-                openai_api_key=openai.api_key, 
-                model_name=MODEL, 
-                verbose=False) 
-    if 'entity_memory' not in st.session_state:
-        st.session_state.entity_memory = ConversationEntityMemory(llm=llm, k=K )
-    Conversation = ConversationChain(
-        llm=llm, 
-        prompt=ENTITY_MEMORY_CONVERSATION_TEMPLATE,
-        memory=st.session_state.entity_memory
-    )  
-else:
-    print("")
-
-st.button("New Chat", on_click=new_chat, type='primary')
-user_input = get_text()
-
-output = Conversation.run(input=user_input+persona_text)  
-st.session_state.past.append(user_input)  
-#st.session_state.past.append(persona_text)
-st.session_state.generated.append(output)
-#
-download_str = []
-
-
-with st.expander("Conversation", expanded=True):
-    for i in range(len(st.session_state['generated'])-1, -1, -1):
-        st.info(st.session_state["past"][i],icon="🤔")
-        st.success(st.session_state["generated"][i],icon="🧬")
-        download_str.append(st.session_state["past"][i])
-        download_str.append(st.session_state["generated"][i])
-    
-    download_str = '\n'.join(download_str)
-    if download_str:
-        st.sidebar.download_button('Download Chat Transcript',download_str)
-
-for i, sublist in enumerate(st.session_state.stored_session):
-        with st.sidebar.expander(label= f"Session:{i}"):
-            st.write(sublist)
-
-if st.session_state.stored_session:   
-    if st.sidebar.checkbox("Clear-all"):
-        del st.session_state.stored_session
+expand_section = st.expander(
+    "Generate a Search Query from URL",
+    expanded=False,
+)
