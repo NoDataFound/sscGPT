@@ -320,7 +320,7 @@ elif search_type == "File Upload":
 with button_col:
     st.write("")
     st.write("")
-    push = st.button("𝖲𝖾𝖺𝗋𝖼𝗁")
+if st.button("𝖲𝖾𝖺𝗋𝖼𝗁"):    
 
     if search_type == "All Assets":
         st.json(results)
