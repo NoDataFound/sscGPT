@@ -405,7 +405,7 @@ with button_col:
                     )
         elif search_type == "ASI Query from URL":
             persona_asi = personas+"ASIQuery.txt".read()
-            url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
+        url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
         if url:
             try:
                 response = requests.get(url)
