@@ -233,6 +233,7 @@ SecurityScorecard Research blog: https://securityscorecard.com/blog?category=res
 with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
     persona_text = f.read()
     if search_type == "Prebuilt":
+
         ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
 
         with ssclogo_col:
@@ -241,11 +242,14 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
         with sscquery_col:
             st.info("Select a prebuilt query")
         query_option = st.sidebar.selectbox("", prebuilt_queries, label_visibility="hidden")
-    if search_type == "ASI Query from URL":
-        asi_persona = personas + "/ASIQuery.txt"
-        with open(asi_persona, "r") as f:
+    
+    asi_persona = personas + "/ASIQuery.txt"
+    with open(asi_persona, "r") as f:
             content = f.read()
-        persona_asi = personas + content
+            persona_asi = personas + content
+            
+
+    if search_type == "ASI Query from URL":
         url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
         if url:
             try:
@@ -277,11 +281,11 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                 st.error(f"Error occurred while fetching the URL: {e}")
 
         results = search_assets(query) 
-        ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
-        with ssclogo_col:
-            st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
-        with sscquery_col:
-            st.info("Generate Attack Surface Intelligence Query from URL")
+    ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
+    with ssclogo_col:
+        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+    with sscquery_col:
+        st.info("Generate Attack Surface Intelligence Query from URL")
         
     if search_type == "All Assets":
 
@@ -293,7 +297,6 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
         with sscassetquery_col:
             st.info("Search All ASI facets")
     if search_type == "LeakedCreds":
-
         sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
 
         with sscassetlogo_col:
