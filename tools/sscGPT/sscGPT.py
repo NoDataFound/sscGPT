@@ -289,14 +289,14 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
             except requests.exceptions.RequestException as e:
                 st.error(f"Error occurred while fetching the URL: {e}")
 
-            generated_text = '\n'.join(generated_text_chunks)
-            query = completions.choices[0].text.strip()
-            if st.checkbox("Check this box to send search to ASI"):
-                query_str = generated_text_chunks[0].split(":")[1].strip() # Extract the query string
-                #st.write(f"Query: {query_str}")
-                assets = search_assets(query_str)
-                st.write(assets)
-            st.write(f"{generated_text_chunks[0]}")    
+        generated_text = '\n'.join(generated_text_chunks)
+        query = completions.choices[0].text.strip()
+        if st.checkbox("Check this box to send search to ASI"):
+            query_str = generated_text_chunks[0].split(":")[1].strip() # Extract the query string
+            #st.write(f"Query: {query_str}")
+            assets = search_assets(query_str)
+            st.write(assets)
+        st.write(f"{generated_text_chunks[0]}")    
 
                     #st.write(total_size)  
                     #st.write(generated_text)
