@@ -253,11 +253,18 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
         url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
         if url:
             try:
+                chunk_size = 2500
                 response = requests.get(url)
                 response.raise_for_status()
                 parsed_text = parse_html_to_text(response.text)
+                generated_text_chunks = []
+                num_chunks = len(parsed_text) // chunk_size + (len(parsed_text) % chunk_size > 0)
+                st.info(f"`{num_chunks}` x `{chunk_size}` token (word) packages will be submitted to OpenAI model: `{model_options[selected_model]}`") 
+                for i in range(0, len(parsed_text), chunk_size):
+                    chunk = parsed_text[i:i+chunk_size]
+                    chunk_length = len(chunk)
                 prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
-                prompt = prompt_template.format(parsed_text, persona_asi)
+                prompt = prompt_template.format(chunk, persona_asi)
                 completions = openai.Completion.create(
                     engine="text-davinci-003",
                     prompt=prompt,
@@ -266,10 +273,20 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                     stop=None,
                     temperature=1.0,
                 )
+                generated_text_chunks.append(completions.choices[0].text.strip())
                 query = completions.choices[0].text.strip()
                 assets = search_assets(query)
                 st.markdown("----")
                 st.write(f"{query}")
+                generated_text = '\n'.join(generated_text_chunks)
+                total_size =  num_chunks * chunk_size
+                col1, col2, col3 = st.columns(3)
+                col1.metric("PDF Word Count", total_size,total_size ) 
+                col2.metric("Token Packages", num_chunks,num_chunks ) 
+                col3.metric("Prompt Token Count", len(prompt), len(prompt))
+                #st.write(total_size)  
+                st.write(generated_text)
+                st.write(generated_text_chunks)
             except requests.exceptions.RequestException as e:
                 st.error(f"Error occurred while fetching the URL: {e}")
 
