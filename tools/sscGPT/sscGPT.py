@@ -363,36 +363,9 @@ with button_col:
                 file_name=f"{query.replace(' ', '_')}.csv",
                 mime="text/csv",
             )
-    elif search_type == "LeakedCreds":
-        results = search_assets(query)
-        st.json(results)
-        with open(jsondir, "w", encoding="UTF-8") as jsonout:
-            json.dump(results, jsonout)
-        df = pd.DataFrame(results["hits"])
-        df.to_csv(csvdir, index=False)
-        with open(textdir, "w", encoding="UTF-8") as textout:
-            for hit in results["hits"]:
-                for key, value in hit.items():
-                    textout.write(f"{key}: {value}\n")
-                    textout.write("\n")
-        with open(jsondir, "r", encoding="UTF-8") as file:
-            json_content = file.read()
-        json_button = st.download_button(
-            label="Download JSON",
-            data=json_content,
-            file_name=f"{query.replace(' ', '_')}.json",
-            mime="application/json",
-        )
-        with open(csvdir, "r", encoding="UTF-8") as file:
-            csv_content = file.read()
-        csv_button = st.download_button(
-            label="Download CSV",
-            data=csv_content,
-            file_name=f"{query.replace(' ', '_')}.csv",
-            mime="text/csv",
-        )
-    elif search_type == "Prebuilt":
-            results = search_assets(query_option)
+        if search_type == "LeakedCreds":
+            
+            results = search_leaked_credentials(query)
             st.json(results)
             with open(jsondir, "w", encoding="UTF-8") as jsonout:
                 json.dump(results, jsonout)
@@ -419,7 +392,35 @@ with button_col:
                 file_name=f"{query.replace(' ', '_')}.csv",
                 mime="text/csv",
             )
-    elif search_type == "File Upload":
+        if search_type == "Prebuilt":
+            
+            st.json(results)
+            with open(jsondir, "w", encoding="UTF-8") as jsonout:
+                json.dump(results, jsonout)
+            df = pd.DataFrame(results["hits"])
+            df.to_csv(csvdir, index=False)
+            with open(textdir, "w", encoding="UTF-8") as textout:
+                for hit in results["hits"]:
+                    for key, value in hit.items():
+                        textout.write(f"{key}: {value}\n")
+                        textout.write("\n")
+            with open(jsondir, "r", encoding="UTF-8") as file:
+                json_content = file.read()
+            json_button = st.download_button(
+                label="Download JSON",
+                data=json_content,
+                file_name=f"{query.replace(' ', '_')}.json",
+                mime="application/json",
+            )
+            with open(csvdir, "r", encoding="UTF-8") as file:
+                csv_content = file.read()
+            csv_button = st.download_button(
+                label="Download CSV",
+                data=csv_content,
+                file_name=f"{query.replace(' ', '_')}.csv",
+                mime="text/csv",
+            )
+        if search_type == "File Upload":
             results = search_assets(query)
             for line in content:
                 line = line.strip()
