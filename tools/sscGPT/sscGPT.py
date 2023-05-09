@@ -250,209 +250,201 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
         with sscquery_col:
             st.info("Generate Attack Surface Intelligence Query from URL")
         url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
-        with open(os.path.join(personas, "ASIQuery.txt"), "r") as f:
-            persona_asi = f.read()
-        if url:
-            try:
-                response = requests.get(url)
-                response.raise_for_status()
+    if search_type == "All Assets":
 
-                img = ImageGrab.grab(bbox=(0, 0, 470, 380))
-                st.image(img, use_column_width=False)
+        sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
 
-                container = st.container()
+        with sscassetlogo_col:
+            st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
 
-                container.markdown(
-                    f'<p style="text-align: center; font-weight: bold;">Screenshot of {url}</p>',
-                    unsafe_allow_html=True,
-                )
-                parsed_text = parse_html_to_text(response.text)
-                prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
-                prompt = prompt_template.format(parsed_text, persona_asi)
-                completions = openai.Completion.create(
-                    engine="text-davinci-003",
-                    prompt=prompt,
-                    max_tokens=2024,
-                    n=1,
-                    stop=None,
-                    temperature=1.0,
-                )
-                query = completions.choices[0].text.strip()
-                assets = search_assets(query)
-                st.markdown("----")
-                st.write(f"{query}")
-            except requests.exceptions.RequestException as e:
-                st.error(f"Error occurred while fetching the URL: {e}")
+        with sscassetquery_col:
+            st.info("Search All ASI facets")
+    if search_type == "LeakedCreds":
 
-results = search_assets(query)
-if search_type == "All Assets":
+        sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
 
-    sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
+        with sscassetlogo_col:
+            st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
 
-    with sscassetlogo_col:
-        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+        with sscassetquery_col:
+            st.warning("Search ASI for LeakedCreds")
+    if search_type == "File Upload":
 
-    with sscassetquery_col:
-        st.info("Search All ASI facets")
-elif search_type == "LeakedCreds":
+        file = st.sidebar.file_uploader("Choose a file")
+        if file is not None:
+            content = file.readlines()
+            #content_lines = content.split("\n")
 
-    sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
+        sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
 
-    with sscassetlogo_col:
-        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
+        with sscassetlogo_col:
+            st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
 
-    with sscassetquery_col:
-        st.warning("Search ASI for LeakedCreds")
-elif search_type == "File Upload":
-
-    file = st.sidebar.file_uploader("Choose a file")
-    if file is not None:
-        content = file.readlines()
-        #content_lines = content.split("\n")
-
-    sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
-
-    with sscassetlogo_col:
-        st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
-
-    with sscassetquery_col:
-        st.warning("Read File contents and search ASI for each line")
+        with sscassetquery_col:
+            st.warning("Read File contents and search ASI for each line")
 with button_col:
     st.write("")
     st.write("")
-if st.button("𝖲𝖾𝖺𝗋𝖼𝗁"):    
+    if st.button("𝖲𝖾𝖺𝗋𝖼𝗁"):    
+        if search_type == "All Assets":
+            st.json(results)
+            with open(jsondir, "w", encoding="UTF-8") as jsonout:
+                json.dump(results, jsonout)
+            df = pd.DataFrame(results["hits"])
+            df.to_csv(csvdir, index=False)
+            with open(textdir, "w", encoding="UTF-8") as textout:
+                for hit in results["hits"]:
+                    for key, value in hit.items():
+                        textout.write(f"{key}: {value}\n")
+                        textout.write("\n")
+            with open(jsondir, "r", encoding="UTF-8") as file:
+                json_content = file.read()
 
-    if search_type == "All Assets":
-        st.json(results)
-        with open(jsondir, "w", encoding="UTF-8") as jsonout:
-            json.dump(results, jsonout)
-        df = pd.DataFrame(results["hits"])
-        df.to_csv(csvdir, index=False)
-        with open(textdir, "w", encoding="UTF-8") as textout:
-            for hit in results["hits"]:
-                for key, value in hit.items():
-                    textout.write(f"{key}: {value}\n")
-                    textout.write("\n")
-        with open(jsondir, "r", encoding="UTF-8") as file:
-            json_content = file.read()
+            json_button = st.download_button(
+                label="Download JSON",
+                data=json_content,
+                file_name=f"{query.replace(' ', '_')}.json",
+                mime="application/json",
+            )
+            with open(csvdir, "r", encoding="UTF-8") as file:
+                csv_content = file.read()
 
-        json_button = st.download_button(
-            label="Download JSON",
-            data=json_content,
-            file_name=f"{query.replace(' ', '_')}.json",
-            mime="application/json",
-        )
-        with open(csvdir, "r", encoding="UTF-8") as file:
-            csv_content = file.read()
+            csv_button = st.download_button(
+                label="Download CSV",
+                data=csv_content,
+                file_name=f"{query.replace(' ', '_')}.csv",
+                mime="text/csv",
+            )
+        elif search_type == "LeakedCreds":
+            results = search_assets(query)
+            st.json(results)
+            with open(jsondir, "w", encoding="UTF-8") as jsonout:
+                json.dump(results, jsonout)
+            df = pd.DataFrame(results["hits"])
+            df.to_csv(csvdir, index=False)
+            with open(textdir, "w", encoding="UTF-8") as textout:
+                for hit in results["hits"]:
+                    for key, value in hit.items():
+                        textout.write(f"{key}: {value}\n")
+                        textout.write("\n")
+            with open(jsondir, "r", encoding="UTF-8") as file:
+                json_content = file.read()
+            json_button = st.download_button(
+                label="Download JSON",
+                data=json_content,
+                file_name=f"{query.replace(' ', '_')}.json",
+                mime="application/json",
+            )
+            with open(csvdir, "r", encoding="UTF-8") as file:
+                csv_content = file.read()
+            csv_button = st.download_button(
+                label="Download CSV",
+                data=csv_content,
+                file_name=f"{query.replace(' ', '_')}.csv",
+                mime="text/csv",
+            )
+        elif search_type == "Prebuilt":
+            results = search_assets(query_option)
+            st.json(results)
+            with open(jsondir, "w", encoding="UTF-8") as jsonout:
+                json.dump(results, jsonout)
+            df = pd.DataFrame(results["hits"])
+            df.to_csv(csvdir, index=False)
+            with open(textdir, "w", encoding="UTF-8") as textout:
+                for hit in results["hits"]:
+                    for key, value in hit.items():
+                        textout.write(f"{key}: {value}\n")
+                        textout.write("\n")
+            with open(jsondir, "r", encoding="UTF-8") as file:
+                json_content = file.read()
+            json_button = st.download_button(
+                label="Download JSON",
+                data=json_content,
+                file_name=f"{query.replace(' ', '_')}.json",
+                mime="application/json",
+            )
+            with open(csvdir, "r", encoding="UTF-8") as file:
+                csv_content = file.read()
+            csv_button = st.download_button(
+                label="Download CSV",
+                data=csv_content,
+                file_name=f"{query.replace(' ', '_')}.csv",
+                mime="text/csv",
+            )
+        elif search_type == "File Upload":
+            results = search_assets(query)
+            for line in content:
+                line = line.strip()
+                for chunk in line:
+                    with open(textdir, "r") as textfile:
+                        st.json(results)
+                    with open(jsondir, "w", encoding="UTF-8") as jsonout:
+                        json.dump(results, jsonout)
+                    df = pd.DataFrame(results["hits"])
+                    df.to_csv(csvdir, index=False)
+                    with open(textdir, "w", encoding="UTF-8") as textout:
+                        for hit in results["hits"]:
+                            for key, value in hit.items():
+                                textout.write(f"{key}: {value}\n")
+                                textout.write("\n")
+                    with open(jsondir, "r", encoding="UTF-8") as file:
+                        json_content = file.read()
+                    json_button = st.download_button(
+                        label="Download JSON",
+                        data=json_content,
+                        file_name=f"{query.replace(' ', '_')}.json",
+                        mime="application/json",
+                    )
+                    with open(csvdir, "r", encoding="UTF-8") as file:
+                        csv_content = file.read()
+                    csv_button = st.download_button(
+                        label="Download CSV",
+                        data=csv_content,
+                        file_name=f"{query.replace(' ', '_')}.csv",
+                        mime="text/csv",
+                    )
+        elif search_type == "ASI Query from URL":
+            persona_asi = personas+"ASIQuery.txt".read()
+            
+            if url:
+                try:
+                    response = requests.get(url)
+                    response.raise_for_status()
 
-        csv_button = st.download_button(
-            label="Download CSV",
-            data=csv_content,
-            file_name=f"{query.replace(' ', '_')}.csv",
-            mime="text/csv",
-        )
-    elif search_type == "LeakedCreds":
-        results = search_assets(query)
-        st.json(results)
-        with open(jsondir, "w", encoding="UTF-8") as jsonout:
-            json.dump(results, jsonout)
-        df = pd.DataFrame(results["hits"])
-        df.to_csv(csvdir, index=False)
-        with open(textdir, "w", encoding="UTF-8") as textout:
-            for hit in results["hits"]:
-                for key, value in hit.items():
-                    textout.write(f"{key}: {value}\n")
-                    textout.write("\n")
-        with open(jsondir, "r", encoding="UTF-8") as file:
-            json_content = file.read()
-        json_button = st.download_button(
-            label="Download JSON",
-            data=json_content,
-            file_name=f"{query.replace(' ', '_')}.json",
-            mime="application/json",
-        )
-        with open(csvdir, "r", encoding="UTF-8") as file:
-            csv_content = file.read()
-        csv_button = st.download_button(
-            label="Download CSV",
-            data=csv_content,
-            file_name=f"{query.replace(' ', '_')}.csv",
-            mime="text/csv",
-        )
-    elif search_type == "Prebuilt":
-        results = search_assets(query_option)
-        st.json(results)
-        with open(jsondir, "w", encoding="UTF-8") as jsonout:
-            json.dump(results, jsonout)
-        df = pd.DataFrame(results["hits"])
-        df.to_csv(csvdir, index=False)
-        with open(textdir, "w", encoding="UTF-8") as textout:
-            for hit in results["hits"]:
-                for key, value in hit.items():
-                    textout.write(f"{key}: {value}\n")
-                    textout.write("\n")
-        with open(jsondir, "r", encoding="UTF-8") as file:
-            json_content = file.read()
-        json_button = st.download_button(
-            label="Download JSON",
-            data=json_content,
-            file_name=f"{query.replace(' ', '_')}.json",
-            mime="application/json",
-        )
-        with open(csvdir, "r", encoding="UTF-8") as file:
-            csv_content = file.read()
-        csv_button = st.download_button(
-            label="Download CSV",
-            data=csv_content,
-            file_name=f"{query.replace(' ', '_')}.csv",
-            mime="text/csv",
-        )
-    elif search_type == "File Upload":
-        results = search_assets(query)
-        for line in content:
-            line = line.strip()
-            for chunk in line:
-                with open(textdir, "r") as textfile:
-                    st.json(results)
-                with open(jsondir, "w", encoding="UTF-8") as jsonout:
-                    json.dump(results, jsonout)
-                df = pd.DataFrame(results["hits"])
-                df.to_csv(csvdir, index=False)
-                with open(textdir, "w", encoding="UTF-8") as textout:
-                    for hit in results["hits"]:
-                        for key, value in hit.items():
-                            textout.write(f"{key}: {value}\n")
-                            textout.write("\n")
-                with open(jsondir, "r", encoding="UTF-8") as file:
-                    json_content = file.read()
-                json_button = st.download_button(
-                    label="Download JSON",
-                    data=json_content,
-                    file_name=f"{query.replace(' ', '_')}.json",
-                    mime="application/json",
-                )
-                with open(csvdir, "r", encoding="UTF-8") as file:
-                    csv_content = file.read()
-                csv_button = st.download_button(
-                    label="Download CSV",
-                    data=csv_content,
-                    file_name=f"{query.replace(' ', '_')}.csv",
-                    mime="text/csv",
-                )
+                    img = ImageGrab.grab(bbox=(0, 0, 470, 380))
+                    st.image(img, use_column_width=False)
+                    container = st.container()
+                    container.markdown(
+                        f'<p style="text-align: center; font-weight: bold;">Screenshot of {url}</p>',
+                        unsafe_allow_html=True,
+                    )
+                    parsed_text = parse_html_to_text(response.text)
+                    prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
+                    prompt = prompt_template.format(parsed_text, persona_asi)
+                    completions = openai.Completion.create(
+                        engine="text-davinci-003",
+                        prompt=prompt,
+                        max_tokens=2024,
+                        n=1,
+                        stop=None,
+                        temperature=1.0,
+                    )
+                    query = completions.choices[0].text.strip()
+                    assets = search_assets(query)
+                    st.markdown("----")
+                    st.write(f"{query}")
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Error occurred while fetching the URL: {e}")
 
+results = search_assets(query) 
 persona_files = [f.split(".")[0] for f in os.listdir(personas) if f.endswith(".txt")]
 
-
 st.sidebar.markdown("----")
-
 
 def get_persona_files():
     return [f.split(".")[0] for f in os.listdir(personas) if f.endswith(".txt")]
 
-
 persona_files = get_persona_files()
-
-
 ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
 
 with ssclogo_col:
@@ -461,7 +453,6 @@ with sscquery_col:
     st.error("👤 Select Persona")
 
 selected_persona = st.sidebar.selectbox("", [default_persona] + persona_files)
-
 
 st.sidebar.markdown("----")
 ologo_col, oquery_col = st.sidebar.columns([1, 10])
