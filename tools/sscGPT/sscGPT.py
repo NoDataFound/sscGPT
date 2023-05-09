@@ -286,8 +286,8 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
             except requests.exceptions.RequestException as e:
                 st.error(f"Error occurred while fetching the URL: {e}")
             
-            st.info("Generated Attack Surface Intelligence Query from URL")
-            st.write(f"{generated_text}")
+                st.info("Generated Attack Surface Intelligence Query from URL")
+                st.write(f"{generated_text}")
                     #st.write(total_size)  
                     #st.write(generated_text)
                     #st.write(generated_text_chunks)
