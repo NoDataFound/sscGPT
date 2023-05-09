@@ -249,7 +249,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
 
         with sscquery_col:
             st.info("Generate Attack Surface Intelligence Query from URL")
-        url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
+        
     if search_type == "All Assets":
 
         sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
@@ -405,6 +405,7 @@ with button_col:
                     )
         elif search_type == "ASI Query from URL":
             persona_asi = personas+"ASIQuery.txt".read()
+            url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
         if url:
             try:
                 response = requests.get(url)
