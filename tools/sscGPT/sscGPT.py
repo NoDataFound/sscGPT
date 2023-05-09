@@ -261,7 +261,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                 parsed_text = parse_html_to_text(response.text)
                 
                 num_chunks = len(parsed_text) // chunk_size + (len(parsed_text) % chunk_size > 0)
-                st.info(f"`{num_chunks}` x `{chunk_size}` token (word) packages will be submitted to OpenAI model: `text-davinci-003`") 
+                st.warning(f"`{num_chunks}` x `{chunk_size}` token (word) packages will be submitted to OpenAI model: `text-davinci-003`") 
                 for i in range(0, len(parsed_text), chunk_size):
                     chunk = parsed_text[i:i+chunk_size]
                     chunk_length = len(chunk)
@@ -286,11 +286,11 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                 col3.metric("Prompt Token Count", len(prompt), len(prompt))
                 st.markdown("----")
                 st.info("Generated Attack Surface Intelligence Query from URL")
-                st.write(f"{generated_text}")
+                
 
             except requests.exceptions.RequestException as e:
                 st.error(f"Error occurred while fetching the URL: {e}")
-            
+            st.write(f"{generated_text}")
 
                     #st.write(total_size)  
                     #st.write(generated_text)
