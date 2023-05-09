@@ -282,6 +282,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                 col2.metric("Token Packages", num_chunks,num_chunks ) 
                 col3.metric("Prompt Token Count", len(prompt), len(prompt))
                 st.markdown("----")
+                st.info("Generated Attack Surface Intelligence Query from URL")
                 st.write(f"{query}")
                 generated_text = '\n'.join(generated_text_chunks)
                 
@@ -297,7 +298,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
             st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
         with sscquery_col:
             st.info("Generate Attack Surface Intelligence Query from URL")
-        
+    results = search_assets(query)
     if search_type == "All Assets":
 
         sscassetlogo_col, sscassetquery_col = st.sidebar.columns([1, 10])
