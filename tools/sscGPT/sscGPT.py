@@ -273,22 +273,22 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                         stop=None,
                         temperature=1.0,
                     )
-                generated_text_chunks.append(completions.choices[0].text.strip())
-                query = completions.choices[0].text.strip()
-                assets = search_assets(query)
-                total_size =  num_chunks * chunk_size
-                col1, col2, col3 = st.columns(3)
-                col1.metric("HTML Word Count", total_size,total_size ) 
-                col2.metric("Token Packages", num_chunks,num_chunks ) 
-                col3.metric("Prompt Token Count", len(prompt), len(prompt))
-                st.markdown("----")
-                st.info("Generated Attack Surface Intelligence Query from URL")
-                st.write(f"{query}")
-                generated_text = '\n'.join(generated_text_chunks)
-                
-                #st.write(total_size)  
-                #st.write(generated_text)
-                #st.write(generated_text_chunks)
+                    generated_text_chunks.append(completions.choices[0].text.strip())
+                    query = completions.choices[0].text.strip()
+                    assets = search_assets(query)
+                    total_size =  num_chunks * chunk_size
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("HTML Word Count", total_size,total_size ) 
+                    col2.metric("Token Packages", num_chunks,num_chunks ) 
+                    col3.metric("Prompt Token Count", len(prompt), len(prompt))
+                    st.markdown("----")
+                    st.info("Generated Attack Surface Intelligence Query from URL")
+                    st.write(f"{query}")
+                    generated_text = '\n'.join(generated_text_chunks)
+                    
+                    #st.write(total_size)  
+                    #st.write(generated_text)
+                    #st.write(generated_text_chunks)
             except requests.exceptions.RequestException as e:
                 st.error(f"Error occurred while fetching the URL: {e}")
 
