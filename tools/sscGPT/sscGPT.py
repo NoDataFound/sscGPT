@@ -363,7 +363,7 @@ with button_col:
                 file_name=f"{query.replace(' ', '_')}.csv",
                 mime="text/csv",
             )
-        if search_type == "LeakedCreds":
+        elif search_type == "LeakedCreds":
             results = search_leaked_credentials(query)
             st.json(results)
             with open(jsondir, "w", encoding="UTF-8") as jsonout:
@@ -391,7 +391,7 @@ with button_col:
                 file_name=f"{query.replace(' ', '_')}.csv",
                 mime="text/csv",
             )
-        if search_type == "Prebuilt":
+        elif search_type == "Prebuilt":
             st.json(results)
             with open(jsondir, "w", encoding="UTF-8") as jsonout:
                 json.dump(results, jsonout)
@@ -418,7 +418,7 @@ with button_col:
                 file_name=f"{query.replace(' ', '_')}.csv",
                 mime="text/csv",
             )
-        if search_type == "File Upload":
+        elif search_type == "File Upload":
             results = search_assets(query)
             for line in content:
                 line = line.strip()
