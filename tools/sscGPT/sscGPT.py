@@ -282,16 +282,16 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                     col2.metric("Token Packages", num_chunks,num_chunks ) 
                     col3.metric("Prompt Token Count", len(prompt), len(prompt))
                     st.markdown("----")
-                    st.info("Generated Attack Surface Intelligence Query from URL")
-                    st.write(f"{query}")
-                    generated_text = '\n'.join(generated_text_chunks)
                     
+                    generated_text = '\n'.join(generated_text_chunks)
+
                     #st.write(total_size)  
                     #st.write(generated_text)
                     #st.write(generated_text_chunks)
             except requests.exceptions.RequestException as e:
                 st.error(f"Error occurred while fetching the URL: {e}")
-
+        st.info("Generated Attack Surface Intelligence Query from URL")
+        st.write(f"{query}")
         results = search_assets(query) 
         ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
         with ssclogo_col:
