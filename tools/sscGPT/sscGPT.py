@@ -336,6 +336,8 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
         if st.button("𝖲𝖾𝖺𝗋𝖼𝗁"):
             pass
     if search_type == "All Assets":
+        results = search_assets(query)
+
         st.json(results)
         with open(jsondir, "w", encoding="UTF-8") as jsonout:
             json.dump(results, jsonout)
