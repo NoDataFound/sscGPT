@@ -321,7 +321,7 @@ with button_col:
     st.write("")
     st.write("")
     push = st.button("𝖲𝖾𝖺𝗋𝖼𝗁")
-if push == 1:
+
     if search_type == "All Assets":
         st.json(results)
         with open(jsondir, "w", encoding="UTF-8") as jsonout:
@@ -364,7 +364,6 @@ if push == 1:
                     textout.write(f"{key}: {value}\n")
                     textout.write("\n")
         with open(jsondir, "r", encoding="UTF-8") as file:
-
             json_content = file.read()
         json_button = st.download_button(
             label="Download JSON",
@@ -372,7 +371,6 @@ if push == 1:
             file_name=f"{query.replace(' ', '_')}.json",
             mime="application/json",
         )
-
         with open(csvdir, "r", encoding="UTF-8") as file:
             csv_content = file.read()
         csv_button = st.download_button(
@@ -381,7 +379,6 @@ if push == 1:
             file_name=f"{query.replace(' ', '_')}.csv",
             mime="text/csv",
         )
-
     elif search_type == "Prebuilt":
         results = search_assets(query_option)
         st.json(results)
@@ -394,7 +391,6 @@ if push == 1:
                 for key, value in hit.items():
                     textout.write(f"{key}: {value}\n")
                     textout.write("\n")
-
         with open(jsondir, "r", encoding="UTF-8") as file:
             json_content = file.read()
         json_button = st.download_button(
@@ -403,7 +399,6 @@ if push == 1:
             file_name=f"{query.replace(' ', '_')}.json",
             mime="application/json",
         )
-
         with open(csvdir, "r", encoding="UTF-8") as file:
             csv_content = file.read()
         csv_button = st.download_button(
@@ -417,7 +412,6 @@ if push == 1:
         for line in content:
             line = line.strip()
             for chunk in line:
-
                 with open(textdir, "r") as textfile:
                     st.json(results)
                 with open(jsondir, "w", encoding="UTF-8") as jsonout:
@@ -431,7 +425,6 @@ if push == 1:
                             textout.write("\n")
                 with open(jsondir, "r", encoding="UTF-8") as file:
                     json_content = file.read()
-
                 json_button = st.download_button(
                     label="Download JSON",
                     data=json_content,
@@ -440,7 +433,6 @@ if push == 1:
                 )
                 with open(csvdir, "r", encoding="UTF-8") as file:
                     csv_content = file.read()
-
                 csv_button = st.download_button(
                     label="Download CSV",
                     data=csv_content,
