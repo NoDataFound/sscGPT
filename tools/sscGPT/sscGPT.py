@@ -250,8 +250,8 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
         with sscquery_col:
             st.info("Generate Attack Surface Intelligence Query from URL")
         url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
-        with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
-            persona_asi = personas+"ASIQuery.txt".read()
+        with open(os.path.join(personas, "ASIQuery.txt"), "r") as f:
+            persona_asi = f.read()
         if url:
             try:
                 response = requests.get(url)
