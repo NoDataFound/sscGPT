@@ -242,7 +242,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
             st.info("Select a prebuilt query")
         query_option = st.sidebar.selectbox("", prebuilt_queries, label_visibility="hidden")
     if search_type == "ASI Query from URL":
-        asi_persona = personas + "ASIQuery.txt"
+        asi_persona = personas + "/ASIQuery.txt"
         with open(asi_persona, "r") as f:
             content = f.read()
         persona_asi = personas + content
