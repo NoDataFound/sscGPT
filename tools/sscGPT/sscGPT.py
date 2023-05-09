@@ -242,11 +242,41 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
             st.info("Select a prebuilt query")
         query_option = st.sidebar.selectbox("", prebuilt_queries, label_visibility="hidden")
     if search_type == "ASI Query from URL":
-        ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
+        persona_asi = personas+"ASIQuery.txt".read()
+        url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
+        if url:
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                img = ImageGrab.grab(bbox=(0, 0, 470, 380))
+                st.image(img, use_column_width=False)
+                container = st.container()
+                container.markdown(
+                    f'<p style="text-align: center; font-weight: bold;">Screenshot of {url}</p>',
+                    unsafe_allow_html=True,
+                )
+                parsed_text = parse_html_to_text(response.text)
+                prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
+                prompt = prompt_template.format(parsed_text, persona_asi)
+                completions = openai.Completion.create(
+                    engine="text-davinci-003",
+                    prompt=prompt,
+                    max_tokens=2024,
+                    n=1,
+                    stop=None,
+                    temperature=1.0,
+                )
+                query = completions.choices[0].text.strip()
+                assets = search_assets(query)
+                st.markdown("----")
+                st.write(f"{query}")
+            except requests.exceptions.RequestException as e:
+                st.error(f"Error occurred while fetching the URL: {e}")
 
+        results = search_assets(query) 
+        ssclogo_col, sscquery_col = st.sidebar.columns([1, 10])
         with ssclogo_col:
             st.image("https://simpleicons.org/icons/securityscorecard.svg", width=50)
-
         with sscquery_col:
             st.info("Generate Attack Surface Intelligence Query from URL")
         
@@ -403,39 +433,8 @@ with button_col:
                         file_name=f"{query.replace(' ', '_')}.csv",
                         mime="text/csv",
                     )
-        elif search_type == "ASI Query from URL":
-            persona_asi = personas+"ASIQuery.txt".read()
-        url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
-        if url:
-            try:
-                response = requests.get(url)
-                response.raise_for_status()
-                img = ImageGrab.grab(bbox=(0, 0, 470, 380))
-                st.image(img, use_column_width=False)
-                container = st.container()
-                container.markdown(
-                    f'<p style="text-align: center; font-weight: bold;">Screenshot of {url}</p>',
-                    unsafe_allow_html=True,
-                )
-                parsed_text = parse_html_to_text(response.text)
-                prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
-                prompt = prompt_template.format(parsed_text, persona_asi)
-                completions = openai.Completion.create(
-                    engine="text-davinci-003",
-                    prompt=prompt,
-                    max_tokens=2024,
-                    n=1,
-                    stop=None,
-                    temperature=1.0,
-                )
-                query = completions.choices[0].text.strip()
-                assets = search_assets(query)
-                st.markdown("----")
-                st.write(f"{query}")
-            except requests.exceptions.RequestException as e:
-                st.error(f"Error occurred while fetching the URL: {e}")
 
-results = search_assets(query) 
+        
 persona_files = [f.split(".")[0] for f in os.listdir(personas) if f.endswith(".txt")]
 
 st.sidebar.markdown("----")
