@@ -251,13 +251,15 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
 
     if search_type == "ASI Query from URL":
         url = st.sidebar.text_input("", placeholder="Enter URL and press enter")
+        generated_text_chunks = []
         if url:
+
             try:
                 chunk_size = 2500
                 response = requests.get(url)
                 response.raise_for_status()
                 parsed_text = parse_html_to_text(response.text)
-                generated_text_chunks = []
+                
                 num_chunks = len(parsed_text) // chunk_size + (len(parsed_text) % chunk_size > 0)
                 st.info(f"`{num_chunks}` x `{chunk_size}` token (word) packages will be submitted to OpenAI model: `text-davinci-003`") 
                 for i in range(0, len(parsed_text), chunk_size):
