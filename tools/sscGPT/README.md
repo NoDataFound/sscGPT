@@ -8,7 +8,9 @@
 <p align="center">
 <img align="center" width="548" height="248" src="https://github.com/securityscorecard/ssc-asi-tools/raw/dev/res/images/ssc_ansi_banner.png"></p> 
 
+<img width="1946" alt="236700520-eb682b95-26b6-4e9a-acd2-87343b4a4ae7" src="https://github.com/NoDataFound/sscGPT/assets/3261849/40db812d-7d57-4367-bb61-03e4151953b3">
 
+![Screenshot 2023-05-09 at 6 10 22 PM](https://github.com/NoDataFound/sscGPT/assets/3261849/b8530e22-aea8-4087-9fc4-ac11e7bcbd1c)
 
 https://user-images.githubusercontent.com/3261849/232922536-679f8e8f-b011-4874-840c-52a4c5ce75f9.mp4
 
