@@ -275,7 +275,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                         stop=None,
                         temperature=1.0,
                     )
-                generated_text_chunks.append(completions.choices[0].text.strip())
+                    generated_text_chunks.append(completions.choices[0].text.strip())
                 generated_text = '\n'.join(generated_text_chunks)
                 query = completions.choices[0].text.strip()
                 assets = search_assets(query)
