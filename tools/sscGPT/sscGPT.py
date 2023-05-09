@@ -259,7 +259,7 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                 parsed_text = parse_html_to_text(response.text)
                 generated_text_chunks = []
                 num_chunks = len(parsed_text) // chunk_size + (len(parsed_text) % chunk_size > 0)
-                st.info(f"`{num_chunks}` x `{chunk_size}` token (word) packages will be submitted to OpenAI model: `{model_options[selected_model]}`") 
+                st.info(f"`{num_chunks}` x `{chunk_size}` token (word) packages will be submitted to OpenAI model: `text-davinci-003`") 
                 for i in range(0, len(parsed_text), chunk_size):
                     chunk = parsed_text[i:i+chunk_size]
                     chunk_length = len(chunk)
