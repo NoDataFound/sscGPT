@@ -263,16 +263,16 @@ with open(os.path.join(personas, f"{query_persona}.txt"), "r") as f:
                 for i in range(0, len(parsed_text), chunk_size):
                     chunk = parsed_text[i:i+chunk_size]
                     chunk_length = len(chunk)
-                prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
-                prompt = prompt_template.format(chunk, persona_asi)
-                completions = openai.Completion.create(
-                    engine="text-davinci-003",
-                    prompt=prompt,
-                    max_tokens=2024,
-                    n=1,
-                    stop=None,
-                    temperature=1.0,
-                )
+                    prompt_template = "Read contents of {}, parse for indicators and use as data {}. Do not print search results."
+                    prompt = prompt_template.format(chunk, persona_asi)
+                    completions = openai.Completion.create(
+                        engine="text-davinci-003",
+                        prompt=prompt,
+                        max_tokens=2024,
+                        n=1,
+                        stop=None,
+                        temperature=1.0,
+                    )
                 generated_text_chunks.append(completions.choices[0].text.strip())
                 query = completions.choices[0].text.strip()
                 assets = search_assets(query)
