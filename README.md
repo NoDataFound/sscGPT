@@ -4,18 +4,18 @@
 
 <img width="1946" alt="Screenshot 2023-05-07 at 3 05 45 PM" src="https://user-images.githubusercontent.com/3261849/236700520-eb682b95-26b6-4e9a-acd2-87343b4a4ae7.png">
 
-
+https://user-images.githubusercontent.com/3261849/219509632-32ee3ad3-8546-492d-8aff-22e947661c78.mp4
 
 https://github.com/NoDataFound/sscGPT/assets/3261849/0c755bef-accf-48f0-9ad1-e446f9bdbd10
 
 
 
-https://github.com/NoDataFound/sscGPT/assets/3261849/b7e922a9-3d01-450e-b357-bee6c209cc48
 
 
 
 
-https://user-images.githubusercontent.com/3261849/219509632-32ee3ad3-8546-492d-8aff-22e947661c78.mp4
+
+
 
 
 
