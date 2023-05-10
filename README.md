@@ -6,6 +6,10 @@
 
 
 
+https://github.com/NoDataFound/sscGPT/assets/3261849/0c755bef-accf-48f0-9ad1-e446f9bdbd10
+
+
+
 https://github.com/NoDataFound/sscGPT/assets/3261849/b7e922a9-3d01-450e-b357-bee6c209cc48
 
 
